@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./scripts/vue.js"></script>
+    <link rel="stylesheet" href="./uk/css/uikit.min.css">
+    <script type="text/javascript" src="./uk/js/uikit-icons.min.js"></script>
+    <script type="text/javascript" src="./uk/js/uikit.min.js"></script>
+    <script type="text/javascript" src="./scripts/socket.io.js"></script>
+    <style>
+    </style>
+</head>
+
+<body>
+<div id="app">
+    <div class="uk-alert-danger" uk-alert v-if="message">
+        <a class="uk-alert-close" uk-close></a>
+        <p>
+            {{message}}
+        </p>
+    </div>
+
+    <div class="uk-section uk-section-muted uk-flex uk-flex-middle uk-animation-fade" uk-height-viewport>
+        <div class="uk-width-1-1">
+            <div class="uk-container">
+                <div class="uk-grid-margin uk-grid uk-grid-stack" uk-grid>
+                    <div class="uk-width-1-1@m">
+
+                        <form
+                                class="uk-margin uk-width-large uk-margin-auto uk-card uk-card-default uk-card-body uk-box-shadow-large">
+                            <ul class="uk-tab uk-flex-center" uk-grid uk-switcher="animation: uk-animation-fade">
+                                <li><a href="#"
+                                       @click="showSignup=true;email='';password='';username='';country='';">Sign
+                                    Up</a></li>
+                                <li><a href="#">Log In</a></li>
+                                <li class="uk-hidden">Forgot Password?</li>
+                            </ul>
+                            <ul class="uk-switcher uk-margin">
+                                <li>
+                                    <h3 class="uk-card-title uk-text-center">Sign up today. It's free!</h3>
+                                    <form>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon:user"></span>
+                                                <input class="uk-input uk-form-large" type="text" v-model="username"
+                                                       placeholder="username">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon:mail"></span>
+                                                <input class="uk-input uk-form-large" type="text" v-model="email"
+                                                       placeholder="Email address">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon:flag"></span>
+                                                <input class="uk-input uk-form-large" type="text" v-model="country"
+                                                       placeholder="Country">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon:lock"></span>
+                                                <input class="uk-input uk-form-large" type="password"
+                                                       v-model="password" placeholder="Set a password">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+                                            <label><input class="uk-checkbox" type="checkbox"> I agree the Terms and
+                                                Conditions.</label>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <button @click.prevent='signUp()'
+                                                    class="uk-button uk-button-primary uk-button-large uk-width-1-1">
+                                                Sign
+                                                Up
+                                            </button>
+                                        </div>
+                                        <div class="uk-text-small uk-text-center">
+                                            Already have an account? <a href="#"
+                                                                        @click="showSignup=true;email='';password='';username='';country='';"
+                                                                        uk-switcher-item="1">Sign In</a>
+                                        </div>
+                                    </form>
+                                </li>
+                                <li>
+                                    <h3 class="uk-card-title uk-text-center">Welcome back!</h3>
+                                    <form>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon: mail"></span>
+                                                <input class="uk-input uk-form-large" type="text"
+                                                       placeholder="username" v-model="username">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon: lock"></span>
+                                                <input class="uk-input uk-form-large" v-model="password"
+                                                       type="password" placeholder="Password">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin uk-text-right@s uk-text-center uk-text-small">
+                                            <a href="#" uk-switcher-item="2">Forgot Password?</a>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <button @click.prevent='attemptLogin()'
+                                                    class="uk-button uk-button-primary uk-button-large uk-width-1-1">
+                                                Login
+                                            </button>
+                                        </div>
+                                        <div class="uk-text-small uk-text-center">
+                                            Not registered? <a href="#" uk-switcher-item="0"
+                                                               @click="showSignup=true;email='';password='';username='';country='';">
+                                            Create an account</a>
+                                        </div>
+                                    </form>
+                                </li>
+                                <li>
+                                    <h3 class="uk-card-title uk-text-center">Forgot your password?</h3>
+                                    <p class="uk-text-center uk-width-medium@s uk-margin-auto">Enter your email
+                                        address and we will send you a link to reset your password.</p>
+                                    <form>
+                                        <div class="uk-margin">
+                                            <div class="uk-inline uk-width-1-1">
+                                                <span class="uk-form-icon" uk-icon="icon: mail"></span>
+                                                <input class="uk-input uk-form-large" type="text"
+                                                       placeholder="Email address">
+                                            </div>
+                                        </div>
+                                        <div class="uk-margin">
+                                            <button
+                                                    class="uk-button uk-button-primary uk-button-large uk-width-1-1">
+                                                Send
+                                                Email
+                                            </button>
+                                        </div>
+                                        <div class="uk-text-small uk-text-center">
+                                            <a href="#" uk-switcher-item="1">Back to login</a>
+                                        </div>
+                                    </form>
+                                </li>
+                            </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loader-container" v-if="loading">
+    <div class="loader"></div>
+</div>
+
+</div>
+
+<script>
+  var app = new Vue({
+    el: '#app',
+    data: {
+      password: '',
+      username: '',
+      email: '',
+      country: '',
+      message: null,
+      loading: false,
+      title: 'Login Form',
+      showSignup: false,
+    },
+    methods: {
+      attemptLogin() {
+        this.loading = true;
+        const formData = new FormData();
+        formData.append('username', this.username);
+        formData.append('password', this.password);
+
+        fetch('/v1/api/auth/signin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: this.username,
+            password: this.password,
+          }),
+        })
+          .then((resp) => {
+            this.loading = false;
+            console.log(resp);
+            if (resp.status === 201) {
+              resp.json().then(data => {
+                console.log(data);
+                localStorage.setItem('userData', JSON.stringify(data));
+                location.href = '/chat.html';
+              });
+            } else if (resp.status === 401) {
+
+              this.message = resp.statusText;
+            } else {
+
+              this.message = 'An error occured';
+            }
+
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loading = false;
+          });
+      },
+      signUp() {
+        this.loading = true;
+        fetch('/v1/api/auth/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: this.username,
+            email: this.email,
+            password: this.password,
+            country: this.country,
+          }),
+        })
+          .then((resp) => {
+            this.loading = false;
+
+            if (resp.status === 201) {
+              this.password = '';
+              this.country = '';
+              this.email = '';
+              this.message = ' Account successfully created';
+              this.showSignup = false;
+              resp.json().then(data => {
+                console.log(data);
+              });
+            } else {
+              this.message = resp.statusText;
+            }
+
+
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loading = false;
+          });
+
+      },
+    },
+  });
+</script>
+</body>
+
+</html>

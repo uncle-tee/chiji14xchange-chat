@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./scripts/vue.js"></script>
+    <script type="text/javascript" src="./scripts/socket.io.js"></script>
+    <link rel="stylesheet" href="./uk/css/uikit.min.css">
+    <script type="text/javascript" src="./uk/js/uikit-icons.min.js"></script>
+    <script type="text/javascript" src="./uk/js/uikit.min.js"></script>
+    <title>Chijiji Chat Client</title>
+</head>
+
+<link rel="stylesheet" href="./styles.css">
+<style>
+    textarea,
+    input {
+        padding: 0px;
+        margin: 0px;
+    }
+
+    .wrapper {
+        padding: 5%;
+    }
+
+
+    .chat-box {
+        width: 45%;
+        float: right;
+        height: 500px;
+    }
+
+    .chat-box h3 {
+        padding: 10px;
+        border-top-right-radius: 5px;
+        background-color: #481818;
+        color: #fff;
+        border-top-left-radius: 5px;
+    }
+
+    .chat-detail {
+        width: 100%;
+        height: 450px;
+        overflow: auto;
+        background: linear-gradient(70deg, #11bbbb, transparent);
+    }
+
+    .message-box {
+        height: 40px;
+        width: 100%;
+    }
+
+    .message-box textarea {
+        height: 100%;
+        width: 84%;
+        border-right: none;
+
+    }
+
+    .message-box .send-btn {
+        float: right;
+        width: 15%;
+        height: 100%;
+        text-align: center;
+        color: white;
+        background-color: #000;
+        text-decoration: none;
+
+    }
+
+    .chat-detail li .message {
+        padding: 10px;
+        margin-top: 5px;
+        width: 80%;
+        border: 1px solid black;
+        display: block;
+        font-family: cursive;
+    }
+
+    .chat-detail li .message.right {
+        float: right;
+        margin-right: 1px;
+        background-color: #afe
+    }
+
+    .chat-detail li .message.left {
+        margin-left: 1px;
+        float: left;
+        background-color: pink;
+    }
+
+    .user-list {
+        width: 45%;
+        float: left;
+        border: 1px solid black;
+    }
+
+    .user-list .user-item {
+        display: block;
+        cursor: pointer;
+        color: blue;
+        padding: 10px;
+        border: 1px solid black;
+    }
+
+    .user-item .indicator {
+        width: 10px;
+        height: 10px;
+        float: right;
+        border-radius: 50%;
+    }
+
+    .user-item .country {
+        padding: 5px;
+    }
+
+    .user-item .indicator.offline {
+
+        background-color: red;
+    }
+
+    .unread-signal {
+        color: grey;
+    }
+
+    .user-item .online {
+        background-color: green;
+    }
+
+    .logout-btn button {
+        border: none;
+        padding: 10px;
+        position: absolute;
+        background-color: red;
+        color: #fff;
+        bottom: 15px;
+        cursor: pointer;
+    }
+
+    #back-btn {
+        display: none;
+    }
+
+    @media screen and (max-width: 500px) {
+        .wrapper {
+            padding: 0;;
+        }
+
+        .user-list {
+            width: 100%;
+        }
+
+        .user-list.hide {
+            display: none;
+        }
+
+        .chat-box.hide {
+            display: none;
+        }
+
+        .user-list.show {
+            display: block;
+        }
+
+        .chat-box.show {
+            display: block;
+        }
+
+        .chat-box {
+            width: 100%;
+        }
+
+        #back-btn {
+            display: block;
+            float: right;
+        }
+
+        .message-box {
+            position: absolute;
+            bottom: 0px;
+        }
+
+        .chat-detail {
+            height: calc(97%);
+        }
+    }
+
+    @media screen and (min-width: 800px) {
+        .wrapper {
+            padding-left: 10%;
+            padding-right: 10%;
+        }
+    }
+
+    @media screen and (min-width: 1000px) {
+        .wrapper {
+            padding-left: 20%;
+            padding-right: 20%;
+        }
+    }
+
+    @media screen and (min-width: 1300px) {
+        .wrapper {
+            padding-left: 25%;
+            padding-right: 25%;
+        }
+    }
+</style>
+
+<body>
+<div id='v-app'>
+    <div id="loader-container" v-if="loading">
+        <div class="loader"></div>
+    </div>
+    <div v-else class="wrapper">
+        <div class="user-list uk-card uk-card-default uk-card-body uk-box-shadow-large"
+             :class="!chat_open?'show':'hide'">
+            <input style="width: 90%; border-right: none;padding: 5px;" type="text" v-model="query"
+                   placeholder="search users here">
+            <ul v-if="users">
+                <li v-for="u of filterUsers()"><a class="user-item" @click.prevent="chatWith(u)">
+                    <span class="country">({{u.country}})</span>
+                    {{u.email || u.username}}
+                    <span class="unread-signal" v-if="getUnreadCount(u.id)!==0">(unread message)</span>
+                    <span class="indicator" :class="isOnline(u.id)?'online':'offline'"></span>
+                </a></li>
+            </ul>
+            <div class="logout-btn">
+                <button @click='logout()'>Logout</button>
+            </div>
+        </div>
+        <div class="chat-box uk-card uk-card-default uk-card-body" :class="chat_open?'show':'hide'">
+            <h3 v-if="activeChat">Chat with : {{activeChat.username}} <span id='back-btn'
+                                                                            @click='chat_open=!chat_open;activeChat=null;'>back</span>
+            </h3>
+            <div class="chat-detail">
+                <ul v-if="activeChat">
+                    <li v-for="m in getMessages" :key="m.id">
+                        <div class="message" :class="m.senderId===activeChat.id?'left':'right'">
+                            {{m.content}}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="message-box">
+                <textarea v-model="message_content"></textarea>
+                <button @click.prevent="sendMessage()" class="send-btn">send</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+  var app = new Vue({
+    el: '#v-app',
+    data: {
+      chat_open: false,
+      query: '',
+      users: [],
+      userData: null,
+      loading: false,
+      activeChat: null,
+      activeChatMessages: null,
+      title: 'Chijiji Chat Client',
+      messages: [],
+      unreadMessages: [],
+      message_content: '',
+      socket: null,
+      onlineUsers: [],
+    },
+    watch: {
+      query: (newVal, oldVal) => {
+        // this.filterUsers(newVal);
+      },
+    },
+    computed: {
+      getMessages() {
+        if (this.activeChat) {
+          if (!this.messages[this.activeChat.id]) return [];
+          return this.messages[this.activeChat.id];
+        }
+        return [];
+      },
+
+    },
+    methods: {
+      filterUsers() {
+
+        if (!this.query || this.query.trim() === '') {
+          return this.users;
+        }
+        return this.users.filter(u => u.username.includes(this.query) || u.country.includes(this
+          .query));
+      },
+      isOnline(id) {
+        return this.onlineUsers.indexOf(id) !== -1;
+      },
+      updateOnlineUsers(usersId) {
+        console.log(usersId);
+        this.$forceUpdate();
+        this.onlineUsers = usersId;
+      },
+      logout() {
+        localStorage.removeItem('userData');
+        location.href = 'index.html';
+      },
+      getLet(id) {
+        if (!this.messages[id]) return 0;
+
+        return this.messages[id].length;
+      },
+      getUnreadCount(id) {
+        if (!this.unreadMessages[id]) {
+          this.unreadMessages[id] = [];
+          return 0;
+        }
+        return this.unreadMessages[id].length;
+      },
+      chatWith(u) {
+        this.chat_open = !this.chat_open;
+        if (this.activeChat === u) return;
+
+        this.activeChat = u;
+        this.unreadMessages[u.id] = [];
+        this.loadConversationsWith(u);
+      },
+      sendMessage() {
+        if (!this.activeChat) {
+          alert('selet user first');
+          return;
+        }
+
+        if (this.message_content.trim() === '') {
+          alert('message could not be empty');
+          return;
+        }
+        fetch('/v1/api/chat/' + this.activeChat.id + '/sendMessage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + this.userData.accessToken,
+          },
+          body: JSON.stringify({
+            message: this.message_content,
+          }),
+        })
+          .then((resp) => {
+            this.loading = false;
+            console.log(resp);
+            if (resp.status === 201) {
+              resp.json().then(data => {
+                this.messages[this.activeChat.id].push(data);
+                this.message_content = '';
+                this.$forceUpdate();
+                this.scrollToBottom();
+              });
+            } else {
+              alert('An error occured');
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loading = false;
+          });
+      },
+      scrollToBottom() {
+        setTimeout(() => {
+
+          document.getElementsByClassName('chat-detail')[0].scrollTop = document
+            .getElementsByClassName('chat-detail')[0].scrollHeight;
+        }, 10);
+
+      },
+      receiveMessage(msg) {
+        if (!this.messages[msg.senderId]) this.messages[msg.senderId] = [];
+        this.messages[msg.senderId].push(msg);
+        if (!this.activeChat || (this.activeChat && msg.senderId !== this.activeChat.id)) {
+          this.unreadMessages[msg.senderId] ? this.unreadMessages[msg.senderId]++ : (this
+            .unreadMessages[msg.senderId] = 1);
+        }
+        this.$forceUpdate();
+        this.scrollToBottom();
+
+      },
+      loadMyConversations() {
+        fetch('/v1/api/chat/messages', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + this.userData.accessToken,
+          },
+        })
+          .then((resp) => {
+            console.log(resp.status);
+            this.loading = false;
+            if (resp.status === 200 || resp.status === 304) {
+              resp.json().then(data => {
+                for (let u of this.users) {
+                  let cou = 0;
+                  let local = [];
+                  for (let m of data) {
+
+                    if (!this.messages[m.senderId]) this.messages[m
+                      .senderId] = [];
+                    if (u.id === m.senderId || u.id === m.receiverId) {
+                      local.push(m);
+                    }
+                  }
+                  console.log(u.username, local);
+                  this.messages[u.id] = local;
+                  local = [];
+                }
+                this.$forceUpdate();
+              });
+            } else {
+              alert('vous devez vous reconnecter ');
+              location.href = 'index.html';
+
+            }
+
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loading = false;
+          });
+
+      },
+      loadConversationsWith(u) {
+        this.loading = true;
+        fetch('/v1/api/chat/' + u.id + '/messages', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + this.userData.accessToken,
+          },
+        })
+          .then((resp) => {
+
+            if (resp.status === 401) {
+              alert('vous devez vous reconnecter ');
+              location.href = 'index.html';
+            }
+
+            resp.json().then(data => {
+              if (!this.messages[u.id]) this.messages[u.id] = [];
+              this.messages[u.id] = Array.from(data);
+              this.conversations = Array.from(data);
+              console.log('with', u.username);
+              this.loading = false;
+              this.scrollToBottom();
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loading = false;
+          });
+      },
+      loadUsers() {
+        fetch('/v1/api/users', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + this.userData.accessToken,
+          },
+        })
+          .then((resp) => {
+            this.loading = false;
+            resp.json().then(data => {
+              this.users = data;
+              this.loadMyConversations();
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loading = false;
+          });
+      },
+    },
+    mounted() {
+      console.log('Successuly mouted');
+      this.userData = JSON.parse(localStorage.getItem('userData'));
+      this.socket = io('/chat', {
+        transports: ['websocket'],
+        query: {
+          token: this.userData.accessToken,
+        },
+      });
+      this.socket.on('connect', () => {
+        this.loadUsers();
+      });
+
+      this.socket.on('message', (msg) => {
+        this.receiveMessage(msg);
+      });
+
+      this.socket.on('users/online', (usersId) => {
+        this.updateOnlineUsers(usersId);
+      });
+
+      this.socket.on('users/new', (user) => {
+        this.users.push(user);
+        this.$forceUpdate();
+      });
+
+      console.log('newMessage/user/' + this.userData.data.id);
+      this.socket.on('newMessage/user/' + this.userData.data.id, (msg) => {
+        console.log('helo world');
+        this.receiveMessage(msg);
+      });
+
+    },
+  });
+</script>
+</body>
+
+</html>
