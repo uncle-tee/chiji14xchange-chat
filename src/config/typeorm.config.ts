@@ -1,10 +1,10 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const TYPEORMCONFIG: TypeOrmModuleOptions = {
-  database: 'chat_app_server',
-  host: 'localhost',
-  username: 'postgres',
-  password: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'chat_app_server',
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
   port: 5432,
   type: 'postgres',
   logging: true,
