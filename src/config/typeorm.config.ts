@@ -7,7 +7,6 @@ export const TYPEORMCONFIG: TypeOrmModuleOptions = {
   password: process.env.DB_PASSWORD || 'postgres',
   port: 5432,
   type: 'postgres',
-  logging: true,
   entities: [__dirname + '/../**/*.entity{.js,.ts}'],
   synchronize: true,
 };
