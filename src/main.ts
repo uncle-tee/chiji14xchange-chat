@@ -21,7 +21,7 @@ async function bootstrap() {
     .setBasePath('v1/api')
     .addBearerAuth('Authorization', 'header')
     .setDescription(
-      'This API has been created to mock what a chat platform can look like for chijiji.',
+      'This API has been created to mock what a chat platform can look like for chiji14xchange chat exchange.',
     )
     .setVersion('1.0')
     .build();
